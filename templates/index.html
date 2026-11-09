@@ -719,7 +719,7 @@
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             Interactive Patient Risk Prediction Engine
           </h2>
-          <p class="section-desc">Adjust any patient parameters to calculate real-time disease likelihood and individualized risk breakdown.</p>
+          <p class="section-desc">Adjust the patient parameters below and click <strong>Calculate Patient Risk Assessment</strong> to evaluate cardiovascular disease risk.</p>
         </div>
       </div>
 
@@ -739,13 +739,13 @@
               <!-- Age -->
               <div class="form-group">
                 <label>Age (years): <span class="val-badge" id="ageVal">55</span></label>
-                <input type="range" id="age" min="25" max="85" value="55" oninput="updateVal('age', this.value); submitPrediction();">
+                <input type="range" id="age" min="25" max="85" value="55" oninput="updateVal('age', this.value);">
               </div>
 
               <!-- Sex -->
               <div class="form-group">
                 <label>Biological Sex:</label>
-                <select id="sex" onchange="submitPrediction();">
+                <select id="sex">
                   <option value="Male" selected>Male</option>
                   <option value="Female">Female</option>
                 </select>
@@ -754,31 +754,31 @@
               <!-- Blood Pressure -->
               <div class="form-group">
                 <label>Resting Blood Pressure (mmHg): <span class="val-badge" id="bpVal">135</span></label>
-                <input type="range" id="blood_pressure" min="80" max="190" value="135" oninput="updateVal('bp', this.value); submitPrediction();">
+                <input type="range" id="blood_pressure" min="80" max="190" value="135" oninput="updateVal('bp', this.value);">
               </div>
 
               <!-- Cholesterol -->
               <div class="form-group">
                 <label>Serum Cholesterol (mg/dL): <span class="val-badge" id="cholVal">220</span></label>
-                <input type="range" id="cholesterol" min="140" max="320" value="220" oninput="updateVal('chol', this.value); submitPrediction();">
+                <input type="range" id="cholesterol" min="140" max="320" value="220" oninput="updateVal('chol', this.value);">
               </div>
 
               <!-- BMI -->
               <div class="form-group">
                 <label>Body Mass Index (BMI): <span class="val-badge" id="bmiVal">28.5</span></label>
-                <input type="range" id="bmi" min="16.0" max="42.0" step="0.1" value="28.5" oninput="updateVal('bmi', this.value); submitPrediction();">
+                <input type="range" id="bmi" min="16.0" max="42.0" step="0.1" value="28.5" oninput="updateVal('bmi', this.value);">
               </div>
 
               <!-- Physical Activity -->
               <div class="form-group">
                 <label>Physical Activity (hrs/wk): <span class="val-badge" id="actVal">2</span></label>
-                <input type="range" id="physical_activity" min="0" max="4" value="2" oninput="updateVal('act', this.value); submitPrediction();">
+                <input type="range" id="physical_activity" min="0" max="4" value="2" oninput="updateVal('act', this.value);">
               </div>
 
               <!-- Smoker -->
               <div class="form-group">
                 <label>Active Smoker:</label>
-                <select id="smoker" onchange="submitPrediction();">
+                <select id="smoker">
                   <option value="No">No</option>
                   <option value="Yes" selected>Yes</option>
                 </select>
@@ -787,7 +787,7 @@
               <!-- Diabetes -->
               <div class="form-group">
                 <label>Diabetic Condition:</label>
-                <select id="diabetes" onchange="submitPrediction();">
+                <select id="diabetes">
                   <option value="No" selected>No</option>
                   <option value="Yes">Yes</option>
                 </select>
@@ -796,7 +796,7 @@
               <!-- Family History -->
               <div class="form-group">
                 <label>Family CVD History:</label>
-                <select id="family_history" onchange="submitPrediction();">
+                <select id="family_history">
                   <option value="No">No</option>
                   <option value="Yes" selected>Yes</option>
                 </select>
@@ -805,12 +805,12 @@
               <!-- Stress Level -->
               <div class="form-group">
                 <label>Stress Level (1-9): <span class="val-badge" id="stressVal">5</span></label>
-                <input type="range" id="stress_level" min="1" max="9" value="5" oninput="updateVal('stress', this.value); submitPrediction();">
+                <input type="range" id="stress_level" min="1" max="9" value="5" oninput="updateVal('stress', this.value);">
               </div>
 
             </div>
 
-            <button type="submit" class="btn-submit">Re-calculate Heart Disease Risk</button>
+            <button type="submit" class="btn-submit" id="btnSubmit">Calculate Patient Risk Assessment</button>
           </form>
         </div>
 
@@ -1254,6 +1254,11 @@
     }
 
     async function submitPrediction() {
+      const btn = document.getElementById("btnSubmit");
+      if (btn) {
+        btn.textContent = "Analyzing Clinical Indicators...";
+        btn.disabled = true;
+      }
       const payload = {
         age: parseFloat(document.getElementById("age").value),
         sex: document.getElementById("sex").value,
@@ -1284,6 +1289,11 @@
     }
 
     function updateResultCard(res) {
+      const btn = document.getElementById("btnSubmit");
+      if (btn) {
+        btn.textContent = "Calculate Patient Risk Assessment";
+        btn.disabled = false;
+      }
       const badge = document.getElementById("resTierBadge");
       const title = document.getElementById("resPredictionTitle");
       const msg = document.getElementById("resSummaryMessage");
