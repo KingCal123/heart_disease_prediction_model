@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heart Disease Classification & Clinical Risk Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0E17;
+      --surface: #111827;
+      --surface-elevated: #162032;
+      --surface-hover: #1E293B;
+      --border: #1F293D;
+      --border-subtle: #172033;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-subtle: rgba(37, 99, 235, 0.12);
+      --accent-border: rgba(37, 99, 235, 0.35);
+
+      --danger: #EF4444;
+      --danger-subtle: rgba(239, 68, 68, 0.12);
+      --danger-border: rgba(239, 68, 68, 0.35);
+
+      --warning: #F59E0B;
+      --warning-subtle: rgba(245, 158, 11, 0.12);
+
+      --success: #10B981;
+      --success-subtle: rgba(16, 185, 129, 0.12);
+      --success-border: rgba(16, 185, 129, 0.35);
+
+      --radius-sm: 6px;
+      --radius: 10px;
+      --radius-lg: 14px;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── Top Executive Navbar ─────────────────────────────────────────────── */
+    header.app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(10, 14, 23, 0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #EF4444, #2563EB);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+    }
+    .brand-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .badge-pill {
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent-border);
+      color: #93C5FD;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Main Container ───────────────────────────────────────────────────── */
+    main.container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* ── Hero Section ─────────────────────────────────────────────────────── */
+    .hero {
+      margin-bottom: 2.5rem;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(17, 24, 39, 0.6) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -120px;
+      right: -80px;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, rgba(37, 99, 235, 0.08) 60%, transparent 80%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #F87171;
+      background: var(--danger-subtle);
+      border: 1px solid var(--danger-border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .hero h1 {
+      font-size: 2.125rem;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+      color: #FFFFFF;
+    }
+    .hero p {
+      font-size: 1.0625rem;
+      color: var(--text-muted);
+      max-width: 860px;
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Section Titles ───────────────────────────────────────────────────── */
+    .section-header {
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .section-title {
+      font-size: 1.375rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── Section 1: Live Interactive Predictor ────────────────────────────── */
+    .predictor-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3.5rem;
+    }
+    @media (max-width: 960px) {
+      .predictor-grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.125rem;
+    }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .form-group label span.val-badge {
+      color: #93C5FD;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    input[type="number"], select {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.9375rem;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.15s ease;
+      width: 100%;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .preset-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .btn-preset {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-preset:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+      border-color: var(--accent-border);
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin-top: 1.25rem;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    /* Prediction Result Card */
+    .result-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-left: 4px solid var(--accent);
+      position: relative;
+      overflow: hidden;
+    }
+    .result-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .prob-display {
+      margin: 1.25rem 0;
+      text-align: center;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .prob-number {
+      font-size: 3rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .prob-desc {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .prob-bar-container {
+      width: 100%;
+      height: 10px;
+      background: #1F293D;
+      border-radius: 999px;
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease, background-color 0.4s ease;
+    }
+    .factors-box {
+      margin-top: 1rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .factors-box h4 {
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .factors-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .factors-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .factors-list li::before {
+      content: "•";
+      color: var(--danger);
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    /* ── Section 2: Visualizations Gallery ────────────────────────────────── */
+    .gallery-section {
+      margin-bottom: 3.5rem;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface); }
+    .tab-btn.active {
+      color: #FFFFFF;
+      background: var(--surface-elevated);
+      border-color: var(--border);
+      border-bottom: 2px solid var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .viz-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.75rem;
+      align-items: center;
+    }
+    @media (max-width: 880px) {
+      .viz-grid { grid-template-columns: 1fr; }
+    }
+    .viz-img-box {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .viz-img-box img {
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius-sm);
+      display: block;
+    }
+    .viz-info h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 0.75rem;
+    }
+    .viz-info p {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .viz-formula {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: #93C5FD;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Section 3: Evaluation Metrics ────────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-border);
+    }
+    .metric-name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #FFFFFF;
+      margin: 4px 0;
+    }
+    .metric-expl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ── Section 4: Dataset Explorer Table ────────────────────────────────── */
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 3.5rem;
+    }
+    .table-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .search-input {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      width: 280px;
+    }
+    .filter-select {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      width: auto;
+    }
+    .scrollable-table {
+      overflow-x: auto;
+      max-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+    table.data-table th {
+      background: var(--surface-elevated);
+      color: var(--text-dim);
+      padding: 10px 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text);
+    }
+    table.data-table tr:hover { background: var(--surface-hover); }
+    .status-badge {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-positive {
+      background: var(--danger-subtle);
+      color: #F87171;
+      border: 1px solid var(--danger-border);
+    }
+    .badge-negative {
+      background: var(--success-subtle);
+      color: #34D399;
+      border: 1px solid var(--success-border);
+    }
+    .table-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+    .page-btn {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.8125rem;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────────── */
+    footer.app-footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top Navbar ───────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="brand-group">
+      <div class="brand-mark">HD</div>
+      <div>
+        <div class="brand-title">CardioPredict AI</div>
+        <div class="brand-subtitle">Heart Disease Decision System</div>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="#predictor">Live Predictor</a>
+      <a href="#visualizations">Visual Analytics</a>
+      <a href="#metrics">Evaluation Metrics</a>
+      <a href="#dataset">Dataset Explorer</a>
+      <span class="badge-pill">Assignment 2</span>
+    </nav>
+  </header>
+
+  <!-- ── Main Container ───────────────────────────────────────────────────── -->
+  <main class="container">
+
+    <!-- ── Hero Section ───────────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="hero-tag">Clinical Machine Learning Benchmark</div>
+      <h1>Cardiovascular Disease Risk Prediction & Classification Engine</h1>
+      <p>
+        Supervised machine learning diagnostic system utilizing <strong>Logistic Regression</strong> with standardized multi-parameter scaling, 
+        evaluating 10 physiological risk indicators across 500 patient records with 80/20 stratified validation.
+      </p>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Dataset Records</div>
+          <div class="kpi-value">{{ total_records }}</div>
+          <div class="kpi-sub">500 total clinical cases</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Medical Recall / Sensitivity</div>
+          <div class="kpi-value" style="color: #34D399;">{{ recall }}</div>
+          <div class="kpi-sub">77.36% disease detection rate</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Overall Accuracy</div>
+          <div class="kpi-value">{{ accuracy }}</div>
+          <div class="kpi-sub">Logistic Regression model</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Target Balance</div>
+          <div class="kpi-value">53.2% / 46.8%</div>
+          <div class="kpi-sub">266 positive / 234 negative</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 1: Live Interactive Predictor ──────────────────────────── -->
+    <section id="predictor">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Interactive Patient Risk Prediction Engine
+          </h2>
+          <p class="section-desc">Adjust any patient parameters to calculate real-time disease likelihood and individualized risk breakdown.</p>
+        </div>
+      </div>
+
+      <div class="predictor-grid">
+        <!-- Input Form -->
+        <div class="card">
+          <div class="preset-row">
+            <span style="font-size: 0.75rem; color: var(--text-dim); align-self: center;">Quick Profiles:</span>
+            <button class="btn-preset" onclick="loadPreset('high')">High Risk Sample</button>
+            <button class="btn-preset" onclick="loadPreset('healthy')">Healthy Low Risk</button>
+            <button class="btn-preset" onclick="loadPreset('borderline')">Borderline Case</button>
+          </div>
+
+          <form id="predictionForm" onsubmit="event.preventDefault(); submitPrediction();">
+            <div class="form-grid">
+              
+              <!-- Age -->
+              <div class="form-group">
+                <label>Age (years): <span class="val-badge" id="ageVal">55</span></label>
+                <input type="range" id="age" min="25" max="85" value="55" oninput="updateVal('age', this.value); submitPrediction();">
+              </div>
+
+              <!-- Sex -->
+              <div class="form-group">
+                <label>Biological Sex:</label>
+                <select id="sex" onchange="submitPrediction();">
+                  <option value="Male" selected>Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <!-- Blood Pressure -->
+              <div class="form-group">
+                <label>Resting Blood Pressure (mmHg): <span class="val-badge" id="bpVal">135</span></label>
+                <input type="range" id="blood_pressure" min="80" max="190" value="135" oninput="updateVal('bp', this.value); submitPrediction();">
+              </div>
+
+              <!-- Cholesterol -->
+              <div class="form-group">
+                <label>Serum Cholesterol (mg/dL): <span class="val-badge" id="cholVal">220</span></label>
+                <input type="range" id="cholesterol" min="140" max="320" value="220" oninput="updateVal('chol', this.value); submitPrediction();">
+              </div>
+
+              <!-- BMI -->
+              <div class="form-group">
+                <label>Body Mass Index (BMI): <span class="val-badge" id="bmiVal">28.5</span></label>
+                <input type="range" id="bmi" min="16.0" max="42.0" step="0.1" value="28.5" oninput="updateVal('bmi', this.value); submitPrediction();">
+              </div>
+
+              <!-- Physical Activity -->
+              <div class="form-group">
+                <label>Physical Activity (hrs/wk): <span class="val-badge" id="actVal">2</span></label>
+                <input type="range" id="physical_activity" min="0" max="4" value="2" oninput="updateVal('act', this.value); submitPrediction();">
+              </div>
+
+              <!-- Smoker -->
+              <div class="form-group">
+                <label>Active Smoker:</label>
+                <select id="smoker" onchange="submitPrediction();">
+                  <option value="No">No</option>
+                  <option value="Yes" selected>Yes</option>
+                </select>
+              </div>
+
+              <!-- Diabetes -->
+              <div class="form-group">
+                <label>Diabetic Condition:</label>
+                <select id="diabetes" onchange="submitPrediction();">
+                  <option value="No" selected>No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+
+              <!-- Family History -->
+              <div class="form-group">
+                <label>Family CVD History:</label>
+                <select id="family_history" onchange="submitPrediction();">
+                  <option value="No">No</option>
+                  <option value="Yes" selected>Yes</option>
+                </select>
+              </div>
+
+              <!-- Stress Level -->
+              <div class="form-group">
+                <label>Stress Level (1-9): <span class="val-badge" id="stressVal">5</span></label>
+                <input type="range" id="stress_level" min="1" max="9" value="5" oninput="updateVal('stress', this.value); submitPrediction();">
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn-submit">Re-calculate Heart Disease Risk</button>
+          </form>
+        </div>
+
+        <!-- Output Card -->
+        <div class="card result-card" id="outputCard">
+          <div>
+            <div class="result-badge" id="resTierBadge" style="background: var(--danger-subtle); color: #F87171; border: 1px solid var(--danger-border);">
+              High Risk Detected
+            </div>
+
+            <h3 id="resPredictionTitle" style="font-size: 1.375rem; font-weight: 800; color: #FFFFFF; margin-bottom: 4px;">
+              Heart Disease Indicated
+            </h3>
+            <p id="resSummaryMessage" style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Patient exhibits physiological indicators strongly correlated with cardiovascular risk.
+            </p>
+
+            <div class="prob-display">
+              <div class="prob-number" id="resProbNumber" style="color: #F87171;">62.4%</div>
+              <div class="prob-desc">Cardiovascular Disease Likelihood: P(Y=1)</div>
+              
+              <div class="prob-bar-container">
+                <div class="prob-bar-fill" id="resProbBar" style="width: 62.4%; background-color: #EF4444;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">
+                <span>0% Healthy</span>
+                <span>50% Threshold</span>
+                <span>100% Critical</span>
+              </div>
+            </div>
+
+            <div class="factors-box">
+              <h4>Contributing Clinical Factors:</h4>
+              <ul class="factors-list" id="resFactorsList">
+                <li>Elevated Blood Pressure</li>
+                <li>Active Tobacco Smoker</li>
+                <li>Positive Family History</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+            Calculated via Logistic Regression log-odds scoring with standardized continuous scaling.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 2: Visualizations Gallery ──────────────────────────────── -->
+    <section id="visualizations" class="gallery-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+            Visual Analytics, Scatter Plots & Model Curves
+          </h2>
+          <p class="section-desc">Multi-perspective graphical analysis demonstrating feature interactions, probability curves, and diagnostic accuracy.</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-scatter1', this)">Scatter: Age vs. Cholesterol</button>
+        <button class="tab-btn" onclick="switchTab('tab-scatter2', this)">Scatter: BP vs. BMI</button>
+        <button class="tab-btn" onclick="switchTab('tab-sigmoid', this)">Logistic Sigmoid Curve</button>
+        <button class="tab-btn" onclick="switchTab('tab-cm', this)">Confusion Matrix</button>
+        <button class="tab-btn" onclick="switchTab('tab-roc', this)">ROC-AUC Curve</button>
+        <button class="tab-btn" onclick="switchTab('tab-feat', this)">Feature Importances</button>
+      </div>
+
+      <!-- Tab 1: Age vs Cholesterol Scatter -->
+      <div id="tab-scatter1" class="tab-content active">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/scatter_age_cholesterol.png" alt="Scatter Plot: Age vs Serum Cholesterol" onerror="this.src='/scatter_age_cholesterol.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Scatter Plot: Patient Age vs. Serum Cholesterol</h3>
+            <p>
+              This bi-variate scatter plot visualizes patient distribution across chronological age (30–79 years) and serum cholesterol (150–299 mg/dL). 
+              Each point represents an individual patient, colored by diagnostic status (<span style="color: #F87171; font-weight: 600;">Red: Heart Disease = 1</span>; <span style="color: #60A5FA; font-weight: 600;">Blue: Healthy = 0</span>).
+            </p>
+            <div class="viz-formula">
+              Exploratory Objective: Identify non-linear clustering and density boundaries across age cohorts.
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--text-dim);">
+              Clinical takeaway: Older cohorts combined with cholesterol levels above 220 mg/dL demonstrate higher frequencies of cardiovascular disease events.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: BP vs BMI Scatter -->
+      <div id="tab-scatter2" class="tab-content">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/scatter_bp_bmi.png" alt="Scatter Plot: Blood Pressure vs BMI" onerror="this.src='/scatter_bp_bmi.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Scatter Plot: Blood Pressure vs. Body Mass Index</h3>
+            <p>
+              Examines hemodynamic stress (resting blood pressure in mmHg) against anthropometric obesity index (BMI in kg/m²). 
+              Permits inspection of how hypertensive stages (Stage 1: 130–139, Stage 2: ≥140 mmHg) compound with obesity categories (BMI ≥ 30).
+            </p>
+            <div class="viz-formula">
+              Hypothesis: Synergistic interaction between vascular pressure and metabolic excess elevates disease probability.
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--text-dim);">
+              Patients in the upper-right quadrant (BP > 140 mmHg & BMI > 30) exhibit concentrated positive diagnosis likelihood.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Sigmoid Curve -->
+      <div id="tab-sigmoid" class="tab-content">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/logistic_regression_sigmoid.png" alt="Logistic Regression Sigmoid Curve" onerror="this.src='/logistic_regression_sigmoid.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Logistic Regression Probability Sigmoid Function</h3>
+            <p>
+              Displays the core mathematical mapping that converts linear log-odds composite risk scores ($z$) into calibrated disease probabilities between 0% and 100%.
+            </p>
+            <div class="viz-formula">
+              P(Y=1|X) = σ(z) = 1 / (1 + e^(-z))<br>
+              where z = β₀ + β₁X₁ + β₂X₂ + ... + β₁₀X₁₀
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--text-dim);">
+              The decision threshold sits at $p = 0.5$ ($z = 0$). Test set patients are overlaid to illustrate actual binary outcomes versus model predicted likelihood.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Confusion Matrix -->
+      <div id="tab-cm" class="tab-content">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/confusion_matrix.png" alt="Confusion Matrix Heatmap" onerror="this.src='/confusion_matrix.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Confusion Matrix Heatmap (80/20 Test Set)</h3>
+            <p>
+              Quantifies exact diagnostic classifications across the 100 held-out test patients:
+            </p>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 0.875rem; margin-bottom: 1rem;">
+              <li><strong>True Positives (TP = {{ tp }}):</strong> Sick patients correctly diagnosed.</li>
+              <li><strong>True Negatives (TN = {{ tn }}):</strong> Healthy patients correctly diagnosed.</li>
+              <li><strong>False Positives (FP = {{ fp }}):</strong> Healthy patients flagged (Type I error).</li>
+              <li><strong>False Negatives (FN = {{ fn }}):</strong> Missed sick patients (Type II error).</li>
+            </ul>
+            <div class="viz-formula">
+              Sensitivity / Recall = TP / (TP + FN) = 41 / 53 = 77.36%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: ROC Curve -->
+      <div id="tab-roc" class="tab-content">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/roc_curves.png" alt="ROC Curves" onerror="this.src='/roc_curves.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Receiver Operating Characteristic (ROC) Curve</h3>
+            <p>
+              Plots the True Positive Rate (Sensitivity) against the False Positive Rate ($1 - \text{Specificity}$) across all discrimination thresholds. 
+              Benchmarking Logistic Regression against Random Forest.
+            </p>
+            <div class="viz-formula">
+              Logistic Regression AUC: {{ roc_auc }} | Baseline Diagonal: 0.500
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--text-dim);">
+              AUC summarizes overall ranking ability independent of a fixed 0.5 threshold.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 6: Feature Importances -->
+      <div id="tab-feat" class="tab-content">
+        <div class="card viz-grid">
+          <div class="viz-img-box">
+            <img src="/public/feature_importance.png" alt="Feature Importance Coefficients" onerror="this.src='/feature_importance.png'" />
+          </div>
+          <div class="viz-info">
+            <h3>Logistic Regression Risk Factor Coefficients</h3>
+            <p>
+              Shows the signed log-odds coefficient ($\beta$) for each clinical predictor. 
+              <span style="color: #F87171; font-weight: 600;">Positive bars (Red)</span> represent risk-increasing factors; 
+              <span style="color: #60A5FA; font-weight: 600;">Negative bars (Blue)</span> represent protective factors.
+            </p>
+            <div class="viz-formula">
+              Odds Ratio = e^(β) — represents multiplicative factor on disease odds
+            </div>
+            <p style="font-size: 0.8125rem; color: var(--text-dim);">
+              Variables like Blood Pressure, Smoking, Diabetes, and Cholesterol exhibit the strongest positive association with heart disease.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── Section 3: Comprehensive Evaluation Metrics ────────────────────── -->
+    <section id="metrics" style="margin-bottom: 3.5rem;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Comprehensive Model Evaluation Metrics
+          </h2>
+          <p class="section-desc">Rigorous statistical evaluation on 100 held-out stratified test samples.</p>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-name">Recall / Sensitivity</div>
+          <div class="metric-value" style="color: #34D399;">{{ recall }}</div>
+          <div class="metric-expl">Critical healthcare metric: caught 77.36% of all true heart disease cases (41/53).</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">Precision (PPV)</div>
+          <div class="metric-value">{{ precision }}</div>
+          <div class="metric-expl">When flagged positive, patient has 56.16% probability of true disease.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">Accuracy</div>
+          <div class="metric-value">{{ accuracy }}</div>
+          <div class="metric-expl">Proportion of correct test predictions across both classes ((TP + TN) / Total).</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">F1-Score</div>
+          <div class="metric-value">{{ f1_score }}</div>
+          <div class="metric-expl">Harmonic mean of precision and recall: 2 * (P * R) / (P + R).</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">Specificity (TNR)</div>
+          <div class="metric-value">{{ specificity }}</div>
+          <div class="metric-expl">True negative rate: correctly identified 31.91% of healthy patients.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">ROC-AUC Score</div>
+          <div class="metric-value">{{ roc_auc }}</div>
+          <div class="metric-expl">Area under the receiver operating characteristic curve across all thresholds.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">Log Loss</div>
+          <div class="metric-value">{{ log_loss }}</div>
+          <div class="metric-expl">Cross-entropy loss penalizing inaccurate probability assignments.</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-name">Matthews Corr (MCC)</div>
+          <div class="metric-value">{{ mcc }}</div>
+          <div class="metric-expl">Balanced correlation metric ranging from -1 (worst) to +1 (perfect).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 4: Dataset Explorer Table ──────────────────────────────── -->
+    <section id="dataset">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Interactive Dataset Explorer (500 Patient Records)
+          </h2>
+          <p class="section-desc">Inspect, search, and filter the complete dataset records used to train and test the model.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-controls">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search by Age, Sex, Smoker..." oninput="handleTableSearch()" />
+          
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 0.8125rem; color: var(--text-dim);">Diagnosis Filter:</label>
+            <select id="diagnosisFilter" class="filter-select" onchange="handleTableFilter()">
+              <option value="all">All Patients (500)</option>
+              <option value="1">Heart Disease (1)</option>
+              <option value="0">Healthy / No Disease (0)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="scrollable-table">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Age</th>
+                <th>Sex</th>
+                <th>Blood Pressure</th>
+                <th>Cholesterol</th>
+                <th>BMI</th>
+                <th>Smoker</th>
+                <th>Diabetes</th>
+                <th>Physical Act.</th>
+                <th>Family History</th>
+                <th>Stress Level</th>
+                <th>Diagnosis</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Dynamically populated via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer">
+          <span id="recordCountText">Showing 1-15 of 500 records</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="page-btn" id="btnPrevPage" onclick="changePage(-1)" disabled>Previous</button>
+            <span id="pageIndicator" style="padding: 5px 8px; font-family: 'JetBrains Mono', monospace;">1 / 34</span>
+            <button class="page-btn" id="btnNextPage" onclick="changePage(1)">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    <p>AI and Expert Systems Assignment 2 • Cardiovascular Disease Classification & Diagnostic Decision Support Engine</p>
+    <p style="margin-top: 4px; color: var(--text-dim);">Trained on 500 clinical patient records with Stratified Logistic Regression & Multidimensional Visual Analytics.</p>
+  </footer>
+
+  <!-- ── JavaScript Engine ────────────────────────────────────────────────── -->
+  <script>
+    // Embedded dataset records from backend
+    const rawDataset = {{ dataset_json|safe }};
+    let filteredRecords = [...rawDataset];
+    let currentPage = 1;
+    const recordsPerPage = 15;
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      const startIndex = (currentPage - 1) * recordsPerPage;
+      const endIndex = Math.min(startIndex + recordsPerPage, filteredRecords.length);
+      const pageData = filteredRecords.slice(startIndex, endIndex);
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 2rem; color: var(--text-dim);">No matching patient records found.</td></tr>`;
+        document.getElementById("recordCountText").textContent = "0 records found";
+        document.getElementById("pageIndicator").textContent = "0 / 0";
+        document.getElementById("btnPrevPage").disabled = true;
+        document.getElementById("btnNextPage").disabled = true;
+        return;
+      }
+
+      pageData.forEach(row => {
+        const tr = document.createElement("tr");
+        const badgeClass = row.heart_disease === 1 ? "badge-positive" : "badge-negative";
+        const badgeLabel = row.heart_disease === 1 ? "Heart Disease (1)" : "Healthy (0)";
+
+        tr.innerHTML = `
+          <td><strong>#${row.id}</strong></td>
+          <td>${row.age}</td>
+          <td>${row.sex}</td>
+          <td>${row.blood_pressure} mmHg</td>
+          <td>${row.cholesterol} mg/dL</td>
+          <td>${row.bmi.toFixed(1)}</td>
+          <td>${row.smoker}</td>
+          <td>${row.diabetes}</td>
+          <td>${row.physical_activity} hrs</td>
+          <td>${row.family_history}</td>
+          <td>${row.stress_level} / 9</td>
+          <td><span class="status-badge ${badgeClass}">${badgeLabel}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const totalPages = Math.ceil(filteredRecords.length / recordsPerPage) || 1;
+      document.getElementById("recordCountText").textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredRecords.length} records`;
+      document.getElementById("pageIndicator").textContent = `${currentPage} / ${totalPages}`;
+      document.getElementById("btnPrevPage").disabled = currentPage <= 1;
+      document.getElementById("btnNextPage").disabled = currentPage >= totalPages;
+    }
+
+    function handleTableSearch() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const filterVal = document.getElementById("diagnosisFilter").value;
+      
+      applyFilters(query, filterVal);
+    }
+
+    function handleTableFilter() {
+      const query = document.getElementById("searchInput").value.toLowerCase().trim();
+      const filterVal = document.getElementById("diagnosisFilter").value;
+      applyFilters(query, filterVal);
+    }
+
+    function applyFilters(query, filterVal) {
+      filteredRecords = rawDataset.filter(item => {
+        const matchesQuery = !query || 
+          item.id.toString().includes(query) ||
+          item.age.toString().includes(query) ||
+          item.sex.toLowerCase().includes(query) ||
+          item.smoker.toLowerCase().includes(query) ||
+          item.diabetes.toLowerCase().includes(query) ||
+          item.blood_pressure.toString().includes(query);
+
+        const matchesDiag = filterVal === "all" || item.heart_disease.toString() === filterVal;
+        return matchesQuery && matchesDiag;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    function changePage(direction) {
+      const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+      currentPage += direction;
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      renderTable();
+    }
+
+    // ── Live Prediction Submission ──────────────────────────────────────────
+    function updateVal(type, val) {
+      if (type === 'age') document.getElementById('ageVal').textContent = val;
+      if (type === 'bp') document.getElementById('bpVal').textContent = val;
+      if (type === 'chol') document.getElementById('cholVal').textContent = val;
+      if (type === 'bmi') document.getElementById('bmiVal').textContent = val;
+      if (type === 'act') document.getElementById('actVal').textContent = val;
+      if (type === 'stress') document.getElementById('stressVal').textContent = val;
+    }
+
+    async function submitPrediction() {
+      const payload = {
+        age: parseFloat(document.getElementById("age").value),
+        sex: document.getElementById("sex").value,
+        blood_pressure: parseFloat(document.getElementById("blood_pressure").value),
+        cholesterol: parseFloat(document.getElementById("cholesterol").value),
+        bmi: parseFloat(document.getElementById("bmi").value),
+        smoker: document.getElementById("smoker").value,
+        diabetes: document.getElementById("diabetes").value,
+        physical_activity: parseFloat(document.getElementById("physical_activity").value),
+        family_history: document.getElementById("family_history").value,
+        stress_level: parseFloat(document.getElementById("stress_level").value)
+      };
+
+      try {
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+        if (res.status === "success") {
+          updateResultCard(res);
+        }
+      } catch (err) {
+        console.error("Prediction request failed:", err);
+      }
+    }
+
+    function updateResultCard(res) {
+      const badge = document.getElementById("resTierBadge");
+      const title = document.getElementById("resPredictionTitle");
+      const msg = document.getElementById("resSummaryMessage");
+      const probNum = document.getElementById("resProbNumber");
+      const probBar = document.getElementById("resProbBar");
+      const factorsList = document.getElementById("resFactorsList");
+      const outputCard = document.getElementById("outputCard");
+
+      badge.textContent = res.risk_tier.toUpperCase();
+      badge.style.color = res.risk_color;
+      badge.style.backgroundColor = res.risk_color + "22";
+      badge.style.borderColor = res.risk_color + "55";
+
+      outputCard.style.borderLeftColor = res.risk_color;
+
+      title.textContent = res.prediction === "Heart Disease Risk" ? "Heart Disease Risk Detected" : "Low Risk / Healthy Profile";
+      title.style.color = res.prediction === "Heart Disease Risk" ? "#F87171" : "#34D399";
+
+      msg.textContent = res.summary_message;
+      probNum.textContent = res.probability.toFixed(1) + "%";
+      probNum.style.color = res.risk_color;
+
+      probBar.style.width = Math.min(Math.max(res.probability, 4), 100) + "%";
+      probBar.style.backgroundColor = res.risk_color;
+
+      factorsList.innerHTML = "";
+      res.contributing_factors.forEach(factor => {
+        const li = document.createElement("li");
+        li.textContent = factor;
+        factorsList.appendChild(li);
+      });
+    }
+
+    // Preset Profiles
+    function loadPreset(type) {
+      if (type === 'high') {
+        document.getElementById('age').value = 68;
+        document.getElementById('sex').value = 'Male';
+        document.getElementById('blood_pressure').value = 160;
+        document.getElementById('cholesterol').value = 275;
+        document.getElementById('bmi').value = 34.5;
+        document.getElementById('smoker').value = 'Yes';
+        document.getElementById('diabetes').value = 'Yes';
+        document.getElementById('physical_activity').value = 0;
+        document.getElementById('family_history').value = 'Yes';
+        document.getElementById('stress_level').value = 8;
+      } else if (type === 'healthy') {
+        document.getElementById('age').value = 32;
+        document.getElementById('sex').value = 'Female';
+        document.getElementById('blood_pressure').value = 105;
+        document.getElementById('cholesterol').value = 175;
+        document.getElementById('bmi').value = 21.5;
+        document.getElementById('smoker').value = 'No';
+        document.getElementById('diabetes').value = 'No';
+        document.getElementById('physical_activity').value = 4;
+        document.getElementById('family_history').value = 'No';
+        document.getElementById('stress_level').value = 2;
+      } else if (type === 'borderline') {
+        document.getElementById('age').value = 52;
+        document.getElementById('sex').value = 'Male';
+        document.getElementById('blood_pressure').value = 132;
+        document.getElementById('cholesterol').value = 215;
+        document.getElementById('bmi').value = 27.0;
+        document.getElementById('smoker').value = 'No';
+        document.getElementById('diabetes').value = 'No';
+        document.getElementById('physical_activity').value = 2;
+        document.getElementById('family_history').value = 'Yes';
+        document.getElementById('stress_level').value = 5;
+      }
+
+      updateVal('age', document.getElementById('age').value);
+      updateVal('bp', document.getElementById('blood_pressure').value);
+      updateVal('chol', document.getElementById('cholesterol').value);
+      updateVal('bmi', document.getElementById('bmi').value);
+      updateVal('act', document.getElementById('physical_activity').value);
+      updateVal('stress', document.getElementById('stress_level').value);
+
+      submitPrediction();
+    }
+
+    // Tab Switching
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      btn.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Initialize
+    window.addEventListener("DOMContentLoaded", () => {
+      renderTable();
+      submitPrediction();
+    });
+  </script>
+</body>
+</html>
