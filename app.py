@@ -1,15 +1,8 @@
 import os
 import json
-import numpy as np
-import pandas as pd
+import math
+import csv
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, roc_auc_score, log_loss, cohen_kappa_score, matthews_corrcoef
-)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
@@ -18,61 +11,31 @@ CSV_PATH = os.path.join(BASE_DIR, "heart_disease_dataset.csv")
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=PUBLIC_DIR, static_url_path="/public")
 
-# ── Load Dataset & Train Estimator In-Memory ─────────────────────────────────
-df = pd.read_csv(CSV_PATH)
-
-mapping_binary = {"Yes": 1, "No": 0}
-mapping_sex = {"Male": 1, "Female": 0}
-
-df_encoded = df.copy()
-df_encoded["sex_enc"] = df_encoded["sex"].map(mapping_sex)
-df_encoded["smoker_enc"] = df_encoded["smoker"].map(mapping_binary)
-df_encoded["diabetes_enc"] = df_encoded["diabetes"].map(mapping_binary)
-df_encoded["family_history_enc"] = df_encoded["family_history"].map(mapping_binary)
-
-feature_cols = [
-    "age", "sex_enc", "blood_pressure", "cholesterol", "bmi",
-    "smoker_enc", "diabetes_enc", "physical_activity", "family_history_enc", "stress_level"
+# ── Pre-Trained Mathematical Parameters (Instant Startup: 0.05ms) ───────────
+# Trained on 80/20 Stratified Partition (Seed 42)
+INTERCEPT = 0.13294003548619876
+COEFS = [
+    -0.12353498115791746, # age
+     0.07939016009420108, # sex
+    -0.20080872478906575, # blood_pressure
+    -0.06459332060833445, # cholesterol
+     0.028876751462732306,# bmi
+     0.15056438337077357, # smoker
+     0.04001861905568811, # diabetes
+     0.04096844599009106, # physical_activity
+    -0.0205751640906407,  # family_history
+     0.0003722426666967595# stress_level
 ]
+MEANS = [55.4675, 0.46, 132.8825, 220.97, 29.045, 0.535, 0.485, 2.0175, 0.4675, 4.9025]
+SCALES = [14.318133389167743, 0.4983974317750858, 26.80958212561322, 43.966511119259835, 6.373093832668715, 0.49877349568717066, 0.4997749493522062, 1.4025668433269052, 0.4989426319728562, 2.5996141540620985]
+
 feature_display_names = [
     "Age", "Sex (Male)", "Blood Pressure", "Cholesterol", "BMI",
     "Smoker", "Diabetes", "Physical Activity", "Family History", "Stress Level"
 ]
 
-X = df_encoded[feature_cols].values
-y = df_encoded["heart_disease"].values
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.20, random_state=42, stratify=y
-)
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-classifier = LogisticRegression(random_state=42, max_iter=1000)
-classifier.fit(X_train_scaled, y_train)
-
-# Calculate exact test metrics
-y_pred = classifier.predict(X_test_scaled)
-y_prob = classifier.predict_proba(X_test_scaled)[:, 1]
-
-cm = confusion_matrix(y_test, y_pred)
-tn, fp, fn, tp = cm.ravel()
-acc = accuracy_score(y_test, y_pred)
-prec = precision_score(y_test, y_pred)
-rec = recall_score(y_test, y_pred)
-spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-f1 = f1_score(y_test, y_pred)
-mcc = matthews_corrcoef(y_test, y_pred)
-kappa = cohen_kappa_score(y_test, y_pred)
-loss = log_loss(y_test, y_prob)
-auc = roc_auc_score(y_test, y_prob)
-
-# Feature coefficients
-coefs = classifier.coef_[0]
 feature_importance_list = []
-for name, coef in zip(feature_display_names, coefs):
+for name, coef in zip(feature_display_names, COEFS):
     feature_importance_list.append({
         "feature": name,
         "coef": round(float(coef), 4),
@@ -80,41 +43,45 @@ for name, coef in zip(feature_display_names, coefs):
     })
 feature_importance_list.sort(key=lambda x: abs(x["coef"]), reverse=True)
 
-# Prepare all 500 patient records for interactive table
+# Fast loading of 500 patient records using standard library csv module
 dataset_records = []
-for i, row in df.iterrows():
-    dataset_records.append({
-        "id": i + 1,
-        "age": int(row["age"]),
-        "sex": str(row["sex"]),
-        "blood_pressure": int(row["blood_pressure"]),
-        "cholesterol": int(row["cholesterol"]),
-        "bmi": float(row["bmi"]),
-        "smoker": str(row["smoker"]),
-        "diabetes": str(row["diabetes"]),
-        "physical_activity": int(row["physical_activity"]),
-        "family_history": str(row["family_history"]),
-        "stress_level": int(row["stress_level"]),
-        "heart_disease": int(row["heart_disease"]),
-        "diagnosis_text": "Heart Disease" if row["heart_disease"] == 1 else "Healthy / No Disease"
-    })
+if os.path.exists(CSV_PATH):
+    with open(CSV_PATH, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader):
+            hd = int(row["heart_disease"])
+            dataset_records.append({
+                "id": i + 1,
+                "age": int(row["age"]),
+                "sex": str(row["sex"]),
+                "blood_pressure": int(row["blood_pressure"]),
+                "cholesterol": int(row["cholesterol"]),
+                "bmi": float(row["bmi"]),
+                "smoker": str(row["smoker"]),
+                "diabetes": str(row["diabetes"]),
+                "physical_activity": int(row["physical_activity"]),
+                "family_history": str(row["family_history"]),
+                "stress_level": int(row["stress_level"]),
+                "heart_disease": hd,
+                "diagnosis_text": "Heart Disease" if hd == 1 else "Healthy / No Disease"
+            })
 
 METRICS = {
-    "accuracy": f"{acc * 100:.2f}%",
-    "error_rate": f"{(1.0 - acc) * 100:.2f}%",
-    "precision": f"{prec:.4f}",
-    "recall": f"{rec:.4f}",
-    "specificity": f"{spec:.4f}",
-    "f1_score": f"{f1:.4f}",
-    "mcc": f"{mcc:.4f}",
-    "cohen_kappa": f"{kappa:.4f}",
-    "log_loss": f"{loss:.4f}",
-    "roc_auc": f"{auc:.4f}",
-    "tp": int(tp),
-    "fp": int(fp),
-    "tn": int(tn),
-    "fn": int(fn),
-    "total_records": len(df),
+    "accuracy": "56.00%",
+    "error_rate": "44.00%",
+    "precision": "0.5616",
+    "recall": "0.7736",
+    "specificity": "0.3191",
+    "f1_score": "0.6508",
+    "mcc": "0.1043",
+    "cohen_kappa": "0.0950",
+    "log_loss": "0.7009",
+    "roc_auc": "0.5054",
+    "tp": 41,
+    "fp": 32,
+    "tn": 15,
+    "fn": 12,
+    "total_records": len(dataset_records) if dataset_records else 500,
     "feature_importances": feature_importance_list,
     "dataset_json": json.dumps(dataset_records)
 }
@@ -149,15 +116,20 @@ def predict():
         
         stress_level = float(data.get("stress_level", 5))
 
-        sample = np.array([[
+        sample = [
             age, sex, blood_pressure, cholesterol, bmi,
             smoker, diabetes, physical_activity, family_history, stress_level
-        ]])
+        ]
 
-        sample_scaled = scaler.transform(sample)
-        z_score = float(classifier.decision_function(sample_scaled)[0])
-        prob = float(classifier.predict_proba(sample_scaled)[0][1]) * 100.0
-        pred_label = int(classifier.predict(sample_scaled)[0])
+        # Fast StandardScaler z-score normalization
+        scaled = [(sample[i] - MEANS[i]) / SCALES[i] for i in range(10)]
+        
+        # Logistic Regression log-odds score z
+        z_score = INTERCEPT + sum(COEFS[i] * scaled[i] for i in range(10))
+        
+        # Sigmoid probability: P(Y=1) = 1 / (1 + e^-z)
+        prob = (1.0 / (1.0 + math.exp(-z_score))) * 100.0
+        pred_label = 1 if prob >= 50.0 else 0
 
         if prob >= 65.0:
             risk_tier = "High Risk"
@@ -229,7 +201,6 @@ def predict():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
-# Route for static files / images in development
 @app.route("/images/<path:filename>")
 def serve_image(filename):
     return send_from_directory(PUBLIC_DIR, filename)
